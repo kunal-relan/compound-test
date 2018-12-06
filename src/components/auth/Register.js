@@ -1,42 +1,63 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import classnames from 'classnames';
-import ReCAPTCHA from "react-google-recaptcha";
-const recaptchaRef = React.createRef();
+import { ReCaptcha } from 'react-recaptcha-google';
 const apiUrl = 'https://us-central1-my-project-1477802989223.cloudfunctions.net';
 
 class Register extends Component {
-  constructor() {
-    super();
+  constructor(props, context) {
+    super(props, context);
     this.state = {
       firstName: '',
       lastName: '',
       email: '',
       error: '',
-      message: ''
+      message: '',
+      captchaToken: ''
     };
 
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+    this.onLoadRecaptcha = this.onLoadRecaptcha.bind(this);
+    this.verifyCallback = this.verifyCallback.bind(this);
   }
 
   onChange(e) {
     this.setState({ [e.target.name]: e.target.value });
   }
 
+  componentDidMount() {
+    if (this.captchaDemo) {
+        this.captchaDemo.reset();
+        this.captchaDemo.execute();
+    }
+  }
+
+  onLoadRecaptcha() {
+    if (this.captchaDemo) {
+        this.captchaDemo.reset();
+        this.captchaDemo.execute();
+    }
+  }
+  verifyCallback(recaptchaToken) {
+    if(recaptchaToken){
+      this.setState({ captchaToken: recaptchaToken });
+    }
+  }
+
   onSubmit(e) {
     e.preventDefault();
-    recaptchaRef.current.execute();
     const newUser = {
       firstName: this.state.firstName,
       lastName: this.state.lastName,
       email: this.state.email,
+      captchaToken: this.state.captchaToken
     };
 
     axios
       .post(`${apiUrl}/compound`, newUser)
-      .then(res => this.setState({message:res.data.message}))
-      .catch(err => this.setState({ error: err.response.data.error }));
+      .then(res => this.setState({message:res.data.message, error:''}))
+      .catch(err => this.setState({ error: err.response.data.error, message:'' }));
   }
 
   render() {
@@ -91,7 +112,7 @@ class Register extends Component {
                     <div className="valid-feedback">{message}</div>
                   )}
                 </div>
-                <ReCAPTCHA sitekey="6LfNI38UAAAAAHe3ILxncbsE5kcEgLDSkmR1Zc_k" ref={recaptchaRef} size="invisible" />
+                <ReCaptcha ref={(el) => {this.captchaDemo = el;}} size="invisible" render="explicit" sitekey="6LfNI38UAAAAAHe3ILxncbsE5kcEgLDSkmR1Zc_k" onloadCallback={this.onLoadRecaptcha} verifyCallback={this.verifyCallback} />
                 <input type="submit" className="btn btn-info btn-block mt-4" />
               </form>
             </div>
